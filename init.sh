@@ -176,10 +176,10 @@ ufw default deny incoming
 ufw default allow outgoing
 
 # 开放端口
-ufw allow "$SSH_PORT/tcp"
+ufw allow "$SSH_PORT/tcp" comment "SSH Port"
 echo -e "已放行自定义 SSH 端口: $SSH_PORT"
-ufw allow 80/tcp
-ufw allow 443/tcp
+ufw allow 80/tcp comment "http port"
+ufw allow 443/tcp comment "https port"
 
 # 启用防火墙
 echo "y" | ufw enable
