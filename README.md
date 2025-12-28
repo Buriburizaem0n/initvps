@@ -1,31 +1,76 @@
-# Ubuntu VPS Initialization & Security Script
+# Linux VPS Initialization & Security Script
 
-[![OS](https://img.shields.io/badge/OS-Ubuntu_20.04%2F22.04%2F24.04-orange?style=flat-square&logo=ubuntu)](https://ubuntu.com/)
+[![Ubuntu](https://img.shields.io/badge/OS-Ubuntu_20.04%2F22.04%2F24.04-orange?style=flat-square&logo=ubuntu)](https://ubuntu.com/)
+[![Alpine](https://img.shields.io/badge/OS-Alpine_3.19+-blue?style=flat-square&logo=alpine-linux)](https://alpinelinux.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-这是一个专为 **Ubuntu LTS (20.04 / 22.04 / 24.04)** 设计的服务器初始化与安全加固脚本。
-它旨在通过一次交互式运行，完成新机器从“裸机”到“生产就绪”的安全配置，特别针对 Ubuntu 24.04 的 SSH 机制进行了适配。
+这是一个专为 **Ubuntu LTS** 和 **Alpine Linux** 设计的服务器初始化与安全加固脚本。
+旨在通过一次交互式运行，完成新机器从“裸机”到“生产就绪”的标准化安全配置。
 
 ## 🚀 核心功能 (Features)
 
-- **🔐 账户安全**:
-  - 创建新的 sudo 管理员用户。
-  - **强制双重校验**设置密码。
-  - 配置 `/etc/sudoers.d` 实现 sudo 免密。
-- **🔑 SSH 加固**:
-  - **强制密钥登录**: 支持导入已有公钥或**自动生成 Ed25519 密钥对**。
-  - **修改 SSH 端口**: 自动修改配置文件并适配防火墙。
-  - **封死旧入口**: 禁用 Root 登录，禁用密码认证。
-  - **Ubuntu 24.04 修复**: 自动处理 `ssh.socket` 问题，确保自定义端口生效。
-- **🛡️ 网络防御**:
-  - **UFW 防火墙**: 默认启用，仅放行自定义 SSH 端口、80、443。
-  - **BBR 加速**: 自动开启 TCP BBR 拥塞控制。
+该脚本会自动适配检测到的操作系统，执行相应的加固逻辑：
+
+| 功能 | Ubuntu (Systemd/Apt) | Alpine (OpenRC/Apk) |
+| :--- | :--- | :--- |
+| **账户安全** | 创建 sudo 用户 (双重密码校验) | 创建 wheel 用户 (双重密码校验) |
+| **SSH 加固** | 强制密钥登录 / 改端口 / 禁 Root | 强制密钥登录 / 改端口 / 禁 Root |
+| **网络防御** | UFW 防火墙 (默认只开 SSH/80/443) | UFW 防火墙 (适配 OpenRC 自启) |
+| **性能优化** | 开启 TCP BBR | 开启 TCP BBR (自动加载模块) |
+| **特殊修复** | 修复 24.04 `ssh.socket` 端口问题 | 自动启用 Community 源安装依赖 |
 
 ## ⚡️ 一键安装 (Quick Start)
 
-使用 `root` 用户登录服务器，运行以下命令即可：
+请根据你的操作系统选择对应的命令。你需要以 `root` 身份登录。
 
-> **注意**: 请确保替换命令中的 URL 为你实际的仓库地址。
+### 🍊 Ubuntu (20.04 / 22.04 / 24.04)
+
+直接运行：
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/Buriburizaem0n/initvps/Ubuntu-24.04/init.sh)
+```
+
+### 🏔️ Alpine Linux (3.19+) 
+
+Alpine 默认可能未安装 curl，且默认 Shell 为 ash，请使用以下组合命令：
+
+```Bash
+
+apk add curl && sh <(curl -sL https://raw.githubusercontent.com/Buriburizaem0n/initvps/Alpine-3.19/init.sh)
+```
+
+## 📝 详细流程 (Workflow)
+运行脚本后，只需跟随屏幕提示操作：
+
+输入新用户名: 用于日常登录的管理员账号。
+
+设置密码: 需输入两次以确认（仅用于 sudo 提权，不用于 SSH 登录）。
+
+配置 SSH 密钥:
+
+选项 [1]: 粘贴你现有的公钥（推荐）。
+
+选项 [2]: 脚本自动生成 Ed25519 密钥对，并将私钥打印在屏幕上供你保存。
+
+设置 SSH 端口: 输入 1024-65535 之间的数字。
+
+自动执行: 系统更新、防火墙配置、BBR 开启、服务重启。
+
+## ⚠️ 安全警告 (Warning)
+脚本运行结束后，请务必遵循以下验证步骤，防止被锁在服务器外：
+
+不要立即关闭当前的 Root 终端窗口！
+
+新开一个终端窗口。
+
+使用新用户、新端口、密钥进行连接测试：
+
+```Bash
+
+ssh -p <新端口> <新用户名>@<服务器IP>
+
+# 如果是脚本生成的密钥：
+ssh -i <密钥文件> -p <新端口> <新用户名>@<服务器IP>
+```
+登录成功并确认能执行 sudo 后，再关闭旧的 Root 连接。
